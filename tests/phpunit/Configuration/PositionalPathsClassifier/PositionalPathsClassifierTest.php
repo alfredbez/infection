@@ -72,6 +72,7 @@ final class PositionalPathsClassifierTest extends TestCase
         $this->assertEquals(
             $scenario->expectedClassifiedPaths(),
             $actual,
+            'Positional paths should be classified into the expected source and test paths.',
         );
     }
 
@@ -80,6 +81,33 @@ final class PositionalPathsClassifierTest extends TestCase
         $baseScenario = Scenario::empty()->withSourceDirectories(['src']);
 
         yield 'no paths' => [$baseScenario];
+
+        yield 'lowercase bare file filter' => [
+            $baseScenario
+                ->withPaths(['mailer.php'])
+                ->withExpected(new ClassifiedPaths(
+                    ['mailer.php'],
+                    [],
+                )),
+        ];
+
+        yield 'digit-starting bare file filter' => [
+            $baseScenario
+                ->withPaths(['1Foo.php'])
+                ->withExpected(new ClassifiedPaths(
+                    ['1Foo.php'],
+                    [],
+                )),
+        ];
+
+        yield 'underscore-starting bare file filter' => [
+            $baseScenario
+                ->withPaths(['_mailer.php'])
+                ->withExpected(new ClassifiedPaths(
+                    ['_mailer.php'],
+                    [],
+                )),
+        ];
 
         yield 'single source file path' => [
             $baseScenario
@@ -221,6 +249,15 @@ final class PositionalPathsClassifierTest extends TestCase
             $baseScenario
                 ->withPaths(['Plus_.php'])
                 ->withExpected(new ClassifiedPaths(['Plus_.php'], [])),
+        ];
+
+        yield 'trailing slash accepts a partial path filter' => [
+            $baseScenario
+                ->withPaths(['Differ/'])
+                ->withExpected(new ClassifiedPaths(
+                    ['Differ/'],
+                    [],
+                )),
         ];
 
         yield 'source directory path with trailing slash' => [
@@ -395,12 +432,6 @@ final class PositionalPathsClassifierTest extends TestCase
             $baseScenario
                 ->withPaths(['scr/Foo.php'])
                 ->withExpected(new InvalidArgumentException('Invalid path argument "scr/Foo.php": multiple paths must be passed as separate arguments.')),
-        ];
-
-        yield 'digit-starting name' => [
-            $baseScenario
-                ->withPaths(['1Foo.php'])
-                ->withExpected(new InvalidArgumentException('Invalid path argument "1Foo.php": multiple paths must be passed as separate arguments.')),
         ];
     }
 

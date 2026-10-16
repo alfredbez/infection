@@ -40,6 +40,7 @@ use Infection\Console\Application;
 use Infection\Container\Container;
 use Infection\Framework\Str;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use function Safe\chdir;
@@ -106,25 +107,37 @@ final class ListSourcesCommandTest extends TestCase
         $tester->assertCommandIsSuccessful();
     }
 
-    public function test_it_lists_source_files_in_an_absolute_directory_with_a_trailing_slash(): void
+    #[DataProvider('directoryFiltersProvider')]
+    public function test_it_lists_source_files_for_directory_filters(string $path): void
     {
         $tester = $this->runCommand([
-            'paths' => [self::FIXTURES_DIR . '/'],
+            'paths' => [$path],
         ]);
 
         $this->assertSame(
             "File1.php\nFile2.php\n",
             Str::toUnixLineEndings($tester->getDisplay()),
-            'An absolute source directory ending in / should list its source files.',
+            'A directory filter ending in / should list its source files.',
         );
         $this->assertSame(
             '',
             $tester->getErrorOutput(normalize: true),
-            'An absolute directory filter should not emit diagnostics.',
+            'A directory filter should not emit diagnostics.',
         );
         $tester->assertCommandIsSuccessful(
-            'Listing an absolute source directory ending in / should succeed.',
+            'Listing a directory filter ending in / should succeed.',
         );
+    }
+
+    public static function directoryFiltersProvider(): iterable
+    {
+        yield 'absolute source directory with trailing slash' => [
+            self::FIXTURES_DIR . '/',
+        ];
+
+        yield 'explicit path fragment' => [
+            'Fixtures/',
+        ];
     }
 
     /**
