@@ -230,7 +230,7 @@ final class DumpAstCommand extends BaseCommand
         Configuration $configuration,
         LoggerInterface $logger,
     ): void {
-        if ($configuration->sourceFilter !== null) {
+        if ($configuration->sourceFilter->filtersFiles()) {
             $logger->warning(
                 'Source file filters are ignored by {command}: only the file argument determines which file is dumped.',
                 ['command' => self::NAME],
