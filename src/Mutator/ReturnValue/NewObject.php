@@ -52,7 +52,8 @@ final class NewObject extends AbstractValueToNullReturnValue
         return new Definition(
             <<<'TXT'
                 Replaces a newly instantiated object with `null` instead. The instantiation statement is kept in order
-                to preserve potential side effects. Example:
+                to preserve potential side effects. Anonymous classes (`new class (...) { ... }`) are included.
+                Example:
 
                 ```php
                 class X {
@@ -119,10 +120,15 @@ final class NewObject extends AbstractValueToNullReturnValue
             return false;
         }
 
-        if (!$node->expr->class instanceof Node\Name) {
-            return false;
+        if ($node->expr->class instanceof Node\Name) {
+            return $this->isNullReturnValueAllowed($node);
         }
 
-        return $this->isNullReturnValueAllowed($node);
+        // `new class (...) { ... }` is a Stmt\Class_, not a Name. Dynamic names (`new $class`) are expressions.
+        if ($node->expr->class instanceof Node\Stmt\Class_) {
+            return $this->isNullReturnValueAllowed($node);
+        }
+
+        return false;
     }
 }

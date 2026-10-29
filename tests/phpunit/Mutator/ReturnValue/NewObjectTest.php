@@ -171,8 +171,180 @@ final class NewObjectTest extends BaseMutatorTestCase
                 CODE,
         ];
 
-        yield 'It does not mutate the return of an anonymous class' => [
-            MutatorFixturesProvider::getFixtureFileContent(self::class, 'no-not-mutates-anonymous-class.php'),
+        yield 'It mutates the return of an anonymous class without constructor arguments' => [
+            <<<'PHP'
+                <?php
+
+                class Test
+                {
+                    public function test()
+                    {
+                        return new class
+                        {
+                            public function getFoo(): int
+                            {
+                                return 1;
+                            }
+                        };
+                    }
+                }
+                PHP,
+            <<<'PHP'
+                <?php
+
+                class Test
+                {
+                    public function test()
+                    {
+                        new class
+                        {
+                            public function getFoo(): int
+                            {
+                                return 1;
+                            }
+                        };
+                        return null;
+                    }
+                }
+                PHP,
+        ];
+
+        yield 'It mutates the return of an anonymous class with constructor arguments' => [
+            <<<'PHP'
+                <?php
+
+                class Test
+                {
+                    public function test()
+                    {
+                        return new class(1)
+                        {
+                            public function __construct(private int $value)
+                            {
+                            }
+                        };
+                    }
+                }
+                PHP,
+            <<<'PHP'
+                <?php
+
+                class Test
+                {
+                    public function test()
+                    {
+                        new class(1)
+                        {
+                            public function __construct(private int $value)
+                            {
+                            }
+                        };
+                        return null;
+                    }
+                }
+                PHP,
+        ];
+
+        yield 'It mutates nested anonymous classes' => [
+            <<<'PHP'
+                <?php
+
+                class Test
+                {
+                    public function test()
+                    {
+                        return new class
+                        {
+                            public function make()
+                            {
+                                return new class
+                                {
+                                    public function value(): int
+                                    {
+                                        return 1;
+                                    }
+                                };
+                            }
+                        };
+                    }
+                }
+                PHP,
+            [
+                <<<'PHP'
+                    <?php
+
+                    class Test
+                    {
+                        public function test()
+                        {
+                            return new class
+                            {
+                                public function make()
+                                {
+                                    new class
+                                    {
+                                        public function value(): int
+                                        {
+                                            return 1;
+                                        }
+                                    };
+                                    return null;
+                                }
+                            };
+                        }
+                    }
+                    PHP,
+                <<<'PHP'
+                    <?php
+
+                    class Test
+                    {
+                        public function test()
+                        {
+                            new class
+                            {
+                                public function make()
+                                {
+                                    return new class
+                                    {
+                                        public function value(): int
+                                        {
+                                            return 1;
+                                        }
+                                    };
+                                }
+                            };
+                            return null;
+                        }
+                    }
+                    PHP,
+            ],
+        ];
+
+        yield 'It does not mutate an anonymous class when the return type does not allow null' => [
+            <<<'PHP'
+                <?php
+
+                class Test
+                {
+                    public function test(): object
+                    {
+                        return new class
+                        {
+                        };
+                    }
+                }
+                PHP,
+        ];
+
+        yield 'It does not mutate a dynamic class instantiation' => [
+            self::wrapCodeInMethod(
+                <<<'PHP'
+                    $className = stdClass::class;
+
+                    return new $className();
+                    PHP,
+            ),
         ];
     }
 }
